@@ -1,0 +1,2 @@
+https://github.com/UM-ARM-Lab/pytorch_kinematics
+https://pypi.org/project/mesh-to-sdf/
