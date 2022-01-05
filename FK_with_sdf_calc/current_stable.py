@@ -78,8 +78,11 @@ def query_points(homogeneous_trans_mat) :
         current_query_point_reshaped = current_query_point.reshape(1,4)
         final_query_points = current_query_point_reshaped[0][:3].reshape(1,-1)
         #Calculation of sdf
+        start_sec = time.time()
         dist = saved_cloud[i].get_sdf_in_batches(final_query_points, use_depth_buffer=False)
-        print(dist)    
+        seconds = time.time() - start_sec
+        print (dist)
+        print (seconds)
 
 if __name__ == "__main__":
     precalculate_surface_point_cloud()

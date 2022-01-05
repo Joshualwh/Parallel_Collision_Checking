@@ -89,28 +89,36 @@ def test_urdf():
 
 def query_points(homogeneous_trans_mat) :
 
-    query_points_world = np.array([[1],
-                                   [1],
-                                   [1],
-                                   [1]])
+    # query_points_world = np.array([[1],
+    #                                [1],
+    #                                [1],
+    #                                [1]])
+    
+    query_points_world_list = torch.rand(1000, 4)
 
-    # print(homogeneous_trans_mat)
+    start_sec = time.time()
+    for query_points_no in range(len(query_points_world_list)) :
+        query_points_world = query_points_world_list[query_points_no]
+        query_points_world[3] = 1
+        query_points_world = query_points_world.reshape(4,1)
+        # print (query_points_world)
+        for i in range(len(homogeneous_trans_mat)) : 
+            if i == 0 :
+                # print("I hope this only once")
+                query_points_local = np.dot(homogeneous_trans_mat[i], query_points_world)
+                current_query_point = query_points_local
+            else :
+                # print("IT ran this!")
+                current_query_point = np.dot(homogeneous_trans_mat[i], current_query_point)
+            current_query_point = current_query_point.reshape(4,1)
+            # print (current_query_point)
 
-    for i in range(len(homogeneous_trans_mat)) : 
-        if i == 0 :
-            # print("I hope this only once")
-            query_points_local = np.dot(homogeneous_trans_mat[i], query_points_world)
-            current_query_point = query_points_local
-        else :
-            # print("IT ran this!")
-            current_query_point = np.dot(homogeneous_trans_mat[i], current_query_point)
-        current_query_point = current_query_point.reshape(4,1)
-        print (current_query_point)
-
-        current_query_point_reshaped = current_query_point.reshape(1,4)
-        final_query_points = current_query_point_reshaped[0][:3].reshape(1,-1)
-        dist = saved_cloud[i].get_sdf_in_batches(final_query_points, use_depth_buffer=False)
-        print(dist)    
+            current_query_point_reshaped = current_query_point.reshape(1,4)
+            final_query_points = current_query_point_reshaped[0][:3].reshape(1,-1)
+            dist = saved_cloud[i].get_sdf_in_batches(final_query_points, use_depth_buffer=False)
+            # print(dist)
+    seconds = time.time() - start_sec
+    print (seconds)
 
     # for i in range(len(homogeneous_trans_mat)) :  
     #     query_points_local = np.dot(homogeneous_trans_mat[i], query_points_world)
