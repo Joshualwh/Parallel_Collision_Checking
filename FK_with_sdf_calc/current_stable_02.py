@@ -30,15 +30,15 @@ def precalculate_surface_point_cloud() :
     print("Scanning Done! Moving on to FK!")
     time.sleep(3)
 
-def test_urdf():
+def test_urdf(dev):
 
     chain = pk.build_serial_chain_from_urdf(open("osr_description/urdf/denso_vs060.urdf").read(), "J6")
     print(chain)
     print(chain.get_joint_parameter_names())
     
     N = 1
-    th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=d)
-    chain = chain.to(dtype=dtype, device=d)
+    th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=dev)
+    chain = chain.to(dtype=dtype, device=dev)
 
     tg_batch = chain.forward_kinematics(th_batch, end_only=False)
     homogeneous_trans_mat = torch.eye(4).repeat(7, 1, 1).type(dtype)
@@ -57,7 +57,7 @@ def test_urdf():
     time.sleep(3)
     
     point_start_seconds = time.time()
-    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=d)
+    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
 
     query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
@@ -73,15 +73,22 @@ def test_urdf():
     print (point_seconds)
 
     dist_start_seconds = time.time()
-    dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
+    for i in range(len(chain.get_joint_parameter_names())):
+        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
     # print(dist)
     dist_seconds = time.time() - dist_start_seconds
     print (dist_seconds)
 
 if __name__ == "__main__":
 
-    d = "cuda" if torch.cuda.is_available() else "cpu"
+    # d = "cuda" if torch.cuda.is_available() else "cpu"
+    # dev = torch.device("cpu")
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float64
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
-    test_urdf()
+    from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    from torch.profiler import profile, record_function, ProfilerActivity
+
+    with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
+        test_urdf(dev)
