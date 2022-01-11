@@ -1,5 +1,12 @@
 import torch
 
-T = torch.eye(4).repeat(7, 1, 1)
-points = torch.randn(1000, 4, 1)
-torch.matmul(T.repeat(len(points), 1, 1), points.repeat_interleave(len(T), dim=0)).shape
+ten = torch.randn(4, 5)
+ids = torch.tensor([2, 1, 4, 1])
+mask = torch.ones_like(ten).scatter_(1, ids.unsqueeze(1), 0.)
+res = ten[mask.bool()].view(4, 4)
+res = ten[mask.bool()]
+
+print(ten)
+print(ids)
+
+print(res)
