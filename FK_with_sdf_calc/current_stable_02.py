@@ -1,5 +1,5 @@
 import os
-os.environ['PYOPENGL_PLATFORM'] = 'egl'
+os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 
 from mesh_to_sdf import get_surface_point_cloud
 from urdf_parser_py.urdf import URDF
