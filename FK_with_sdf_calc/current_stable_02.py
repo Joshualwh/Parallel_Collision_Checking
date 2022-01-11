@@ -1,3 +1,6 @@
+import os
+os.environ['PYOPENGL_PLATFORM'] = 'egl'
+
 from mesh_to_sdf import get_surface_point_cloud
 from urdf_parser_py.urdf import URDF
 
@@ -71,7 +74,7 @@ def test_urdf():
 
     dist_start_seconds = time.time()
     dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
-    # print(dist)
+    print(dist)
     dist_seconds = time.time() - dist_start_seconds
     print (dist_seconds)
 
