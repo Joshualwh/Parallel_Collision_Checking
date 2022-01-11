@@ -74,7 +74,7 @@ def test_urdf():
 
     dist_start_seconds = time.time()
     dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
-    print(dist)
+    # print(dist)
     dist_seconds = time.time() - dist_start_seconds
     print (dist_seconds)
 
