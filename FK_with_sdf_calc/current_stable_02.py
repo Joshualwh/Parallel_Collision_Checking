@@ -1,5 +1,5 @@
 import os
-os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
+# os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 
 from mesh_to_sdf import get_surface_point_cloud
 from urdf_parser_py.urdf import URDF
@@ -81,14 +81,14 @@ def test_urdf(dev):
 
 if __name__ == "__main__":
 
-    # d = "cuda" if torch.cuda.is_available() else "cpu"
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
     # dev = torch.device("cpu")
-    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float64
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
-    from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
-    from torch.profiler import profile, record_function, ProfilerActivity
+    # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    # from torch.profiler import profile, record_function, ProfilerActivity
 
-    with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
-        test_urdf(dev)
+    # with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
+    test_urdf(dev)
