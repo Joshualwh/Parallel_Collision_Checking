@@ -41,7 +41,7 @@ def test_urdf(dev):
     chain = chain.to(dtype=dtype, device=dev)
 
     tg_batch = chain.forward_kinematics(th_batch, end_only=False)
-    homogeneous_trans_mat = torch.eye(4).repeat(7, 1, 1).type(dtype)
+    homogeneous_trans_mat = torch.eye(4, dtype=dtype, device=dev).repeat(7, 1, 1)
 
     i = 0
     for key in tg_batch :
@@ -64,7 +64,7 @@ def test_urdf(dev):
     # print(query_points_local_list)
     query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
     # print(query_points_local_list_reshaped)
-    ids = torch.tensor([3]).repeat(7000)
+    ids = torch.tensor([3], device=dev).repeat(7000)
 
     mask = torch.ones_like(query_points_local_list_reshaped).scatter_(1, ids.unsqueeze(1), 0.)
     query_points_local_list_final = query_points_local_list[mask.bool()].view(7000, 3)
@@ -81,14 +81,15 @@ def test_urdf(dev):
 
 if __name__ == "__main__":
 
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
-    # dev = torch.device("cpu")
+    # dev = "cuda" if torch.cuda.is_available() else "cpu"
+    dev = "cpu"
     # dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float64
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
     # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    test_urdf(dev)
     # from torch.profiler import profile, record_function, ProfilerActivity
 
     # with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
-    test_urdf(dev)
+    #     test_urdf(dev)
