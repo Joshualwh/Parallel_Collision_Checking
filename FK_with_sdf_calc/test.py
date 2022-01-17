@@ -1,6 +1,7 @@
-# from mesh_to_sdf import mesh_to_voxels, mesh_to_sdf
+import os
+# os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
+
 from mesh_to_sdf import get_surface_point_cloud
-# from transformations.transformations import quaternion_conjugate
 from urdf_parser_py.urdf import URDF
 
 import torch
@@ -9,11 +10,6 @@ import pytorch_kinematics as pk
 import trimesh
 import numpy as np
 import time
-
-def torch_delete(tensor, indices):
-    mask = torch.ones(tensor.numel(), dtype=torch.bool)
-    mask[indices] = False
-    return tensor[mask]
 
 def precalculate_surface_point_cloud() :
 
@@ -32,21 +28,22 @@ def precalculate_surface_point_cloud() :
 
         saved_cloud[i] = cloud
 
-    print("Scanning Done! Moving on to FK!")
-    time.sleep(3)
 
-def test_urdf():
+    print("Scanning Done! Moving on to FK!")
+    time.sleep(1)
+
+def test_urdf(dev):
 
     chain = pk.build_serial_chain_from_urdf(open("osr_description/urdf/denso_vs060.urdf").read(), "J6")
     print(chain)
     print(chain.get_joint_parameter_names())
     
     N = 1
-    th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=d)
-    chain = chain.to(dtype=dtype, device=d)
+    th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=dev)
+    chain = chain.to(dtype=dtype, device=dev)
 
     tg_batch = chain.forward_kinematics(th_batch, end_only=False)
-    homogeneous_trans_mat = torch.eye(4).repeat(7, 1, 1).type(dtype)
+    homogeneous_trans_mat = torch.eye(4, dtype=dtype, device=dev).repeat(7, 1, 1)
 
     i = 0
     for key in tg_batch :
@@ -59,65 +56,42 @@ def test_urdf():
         i+= 1
 
     print("Randomized one FK! Moving on to calculate SDF!")
-    time.sleep(3)
+    time.sleep(1)
     
-    # point_start_sec = time.time()
-    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=d)
+    point_start_seconds = time.time()
+    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
 
     query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
-
-    print(query_points_local_list)
-    # query_points_local_list_reshaped = torch.reshape(query_points_local_list, (7000, 4))
+    # print(query_points_local_list)
     query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
-
-    print(query_points_local_list_reshaped)
-
-    # for i in range(len(query_points_local_list_reshaped)) :
-    #     query_points_local_list_reshaped_2 = torch_delete(query_points_local_list_reshaped[i], [3])
-    # print(query_points_local_list_reshaped_2)
-
-    # ten = torch.randn(4, 5)
-    ids = torch.tensor([3]).repeat(7000)
-
-    # print(ids)
-    # mask = torch.ones_like(ten).scatter_(1, ids.unsqueeze(1), 0.)
-    # res = ten[mask.bool()].view(4, 4)
+    # print(query_points_local_list_reshaped)
+    ids = torch.tensor([3], device=dev).repeat(7000)
 
     mask = torch.ones_like(query_points_local_list_reshaped).scatter_(1, ids.unsqueeze(1), 0.)
     query_points_local_list_final = query_points_local_list[mask.bool()].view(7000, 3)
+    # print(query_points_local_list_final)
+    point_seconds = time.time() - point_start_seconds
+    print (point_seconds)
 
-    print(query_points_local_list_final)
-
-    # for i in range(len(homogeneous_trans_mat)) : 
-    #     if i == 0 :
-    #         # print("I hope this only once")
-    #         query_points_local = torch.matmul(homogeneous_trans_mat[i], query_points_world_list.T).T
-    #         current_query_point = query_points_local
-    #     else :
-    #         # print("IT ran this!")
-    #         current_query_point = torch.matmul(homogeneous_trans_mat[i], current_query_point.T).T
-    #     # current_query_point = torch.reshape(current_query_point, (4,1))
-    #     # print (current_query_point.size)
-    # point_seconds = point_start_sec - time.time()
-
-        #     current_query_point_reshaped = torch.reshape(current_query_point, (1,4))
-        #     final_query_points = torch.reshape(current_query_point_reshaped[0][:3], (1,-1))
-
-    dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
-            # print(dist)
-    # seconds = time.time() - start_sec
-    # print (seconds)
+    dist_start_seconds = time.time()
+    for i in range(len(chain.get_joint_parameter_names())):
+        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*1000:((i+1)*1000)-1], use_depth_buffer=False)
+    # print(dist)
+    dist_seconds = time.time() - dist_start_seconds
+    print (dist_seconds)
 
 if __name__ == "__main__":
 
-    d = "cuda" if torch.cuda.is_available() else "cpu"
-    # d = "cpu"
+    # dev = "cuda" if torch.cuda.is_available() else "cpu"
+    # dev = "cpu"
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float64
     saved_cloud = np.empty(7, dtype=object)
-    # saved_cloud = torch.empty(7, device=d)
-    # print (saved_cloud)
-    # saved_cloud = torch.Tensor(saved_cloud).cuda()
     precalculate_surface_point_cloud()
-    test_urdf()
-    # query_points(homogeneous_trans_mat)
+    # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    test_urdf(dev)
+    # from torch.profiler import profile, record_function, ProfilerActivity
+
+    # with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
+    #     test_urdf(dev)

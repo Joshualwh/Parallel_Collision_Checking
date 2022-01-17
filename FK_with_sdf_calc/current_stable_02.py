@@ -82,12 +82,12 @@ def test_urdf(dev):
 if __name__ == "__main__":
 
     # dev = "cuda" if torch.cuda.is_available() else "cpu"
-    dev = "cpu"
-    # dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # dev = "cpu"
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float64
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
-    # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
     test_urdf(dev)
     # from torch.profiler import profile, record_function, ProfilerActivity
 
