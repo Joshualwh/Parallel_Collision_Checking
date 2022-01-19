@@ -1,2 +1,5 @@
 https://github.com/UM-ARM-Lab/pytorch_kinematics
 https://pypi.org/project/mesh-to-sdf/
+https://towardsdatascience.com/make-knn-300-times-faster-than-scikit-learns-in-20-lines-5e29d74e76bb
+https://github.com/facebookresearch/faiss
+https://gist.github.com/j-adamczyk/74ee808ffd53cd8545a49f185a908584
