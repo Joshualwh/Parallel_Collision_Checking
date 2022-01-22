@@ -4,6 +4,7 @@ import os
 from mesh_to_sdf import get_surface_point_cloud
 from urdf_parser_py.urdf import URDF
 
+import pandas as pd
 import torch
 import tensorflow as tf
 import pytorch_kinematics as pk
@@ -32,7 +33,7 @@ def precalculate_surface_point_cloud() :
     print("Scanning Done! Moving on to FK!")
     time.sleep(1)
 
-def test_urdf(dev):
+def test_urdf(dev, run_time):
 
     chain = pk.build_serial_chain_from_urdf(open("osr_description/urdf/denso_vs060.urdf").read(), "J6")
     print(chain)
@@ -58,6 +59,8 @@ def test_urdf(dev):
     print("Randomized one FK! Moving on to calculate SDF!")
     time.sleep(1)
     
+    dfObj_per_run = pd.DataFrame()
+    # dfObj_per_run['Timing'] = ['0']
     point_start_seconds = time.time()
     query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
@@ -73,14 +76,20 @@ def test_urdf(dev):
     # print(query_points_local_list_final)
     point_seconds = time.time() - point_start_seconds
     print (point_seconds)
+    dfObj_per_run[run_time] = [point_seconds]
 
     dist_start_seconds = time.time()
     for i in range(len(chain.get_joint_parameter_names())):
         # dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*1000:((i+1)*1000)-1], use_depth_buffer=False)
-        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, use_depth_buffer=False)
+        dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
     # print(dist)
+        # print (dfObj_per_link)
+        dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
+    # print (dfObj_per_run)
     dist_seconds = time.time() - dist_start_seconds
     print ("Total timing: ", dist_seconds)
+
+    return dfObj_per_run
 
 if __name__ == "__main__":
 
@@ -91,7 +100,17 @@ if __name__ == "__main__":
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
     # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
-    test_urdf(dev)
+    dfObj_total = pd.DataFrame()
+    for run_time in range (1000) :
+        dfObj_per_run = test_urdf(dev, run_time)
+        run_time+=1
+        dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
+        # result = pd.concat([df1, df4], axis=1)
+    
+    print (dfObj_total)
+
+    dfObj_total.to_csv('timing_results.csv')
+
     # from torch.profiler import profile, record_function, ProfilerActivity
 
     # with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
