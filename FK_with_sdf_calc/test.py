@@ -79,7 +79,7 @@ def test_urdf(dev, run_time):
     dfObj_per_run[run_time] = [point_seconds]
 
     dist_start_seconds = time.time()
-    for i in range(len(chain.get_joint_parameter_names())):
+    for i in range(len(chain.get_joint_parameter_names())+1):
         # dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*1000:((i+1)*1000)-1], use_depth_buffer=False)
         dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
     # print(dist)
@@ -96,20 +96,22 @@ if __name__ == "__main__":
     # dev = "cuda" if torch.cuda.is_available() else "cpu"
     dev = "cpu"
     # dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dtype = torch.float64
+    dtype = torch.float32
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
     # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
-    dfObj_total = pd.DataFrame()
-    for run_time in range (1000) :
-        dfObj_per_run = test_urdf(dev, run_time)
-        run_time+=1
-        dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
+    run_time = 1
+    # dfObj_total = pd.DataFrame()
+    test_urdf(dev, run_time)
+    # for run_time in range (1000) :
+    #     dfObj_per_run = test_urdf(dev, run_time)
+    #     run_time+=1
+    #     dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
         # result = pd.concat([df1, df4], axis=1)
     
-    print (dfObj_total)
+    # print (dfObj_total)
 
-    dfObj_total.to_csv('timing_results.csv')
+    # dfObj_total.to_csv('timing_results.csv')
 
     # from torch.profiler import profile, record_function, ProfilerActivity
 

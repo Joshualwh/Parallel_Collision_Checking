@@ -3,3 +3,5 @@ https://pypi.org/project/mesh-to-sdf/
 https://towardsdatascience.com/make-knn-300-times-faster-than-scikit-learns-in-20-lines-5e29d74e76bb
 https://github.com/facebookresearch/faiss
 https://gist.github.com/j-adamczyk/74ee808ffd53cd8545a49f185a908584
+https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KDTree.html
+https://github.com/facebookresearch/faiss/blob/main/contrib/torch_utils.py
