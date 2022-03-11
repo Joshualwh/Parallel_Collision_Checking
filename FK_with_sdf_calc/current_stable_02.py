@@ -89,7 +89,7 @@ if __name__ == "__main__":
     precalculate_surface_point_cloud()
     from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
     test_urdf(dev)
-    # from torch.profiler import profile, record_function, ProfilerActivity
+    from torch.profiler import profile, record_function, ProfilerActivity
 
-    # with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
-    #     test_urdf(dev)
+    with profile(activities=[ProfilerActivity.CPU,], record_shapes=True) as prof:
+        test_urdf(dev)

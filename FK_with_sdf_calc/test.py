@@ -60,7 +60,7 @@ def test_urdf(dev, run_time):
     time.sleep(1)
     
     dfObj_per_run = pd.DataFrame()
-    # dfObj_per_run['Timing'] = ['0']
+    dfObj_per_run['Timing'] = ['0']
     point_start_seconds = time.time()
     query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
@@ -101,17 +101,17 @@ if __name__ == "__main__":
     precalculate_surface_point_cloud()
     # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
     run_time = 1
-    # dfObj_total = pd.DataFrame()
-    test_urdf(dev, run_time)
-    # for run_time in range (1000) :
-    #     dfObj_per_run = test_urdf(dev, run_time)
-    #     run_time+=1
-    #     dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
+    dfObj_total = pd.DataFrame()
+    # test_urdf(dev, run_time)
+    for run_time in range (100) :
+        dfObj_per_run = test_urdf(dev, run_time)
+        run_time+=1
+        dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
         # result = pd.concat([df1, df4], axis=1)
     
     # print (dfObj_total)
 
-    # dfObj_total.to_csv('timing_results.csv')
+    dfObj_total.to_csv('timing_results.csv')
 
     # from torch.profiler import profile, record_function, ProfilerActivity
 
