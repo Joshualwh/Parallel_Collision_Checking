@@ -103,7 +103,7 @@ if __name__ == "__main__":
     run_time = 1
     dfObj_total = pd.DataFrame()
     # test_urdf(dev, run_time)
-    for run_time in range (100) :
+    for run_time in range (1) :
         dfObj_per_run = test_urdf(dev, run_time)
         run_time+=1
         dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     
     # print (dfObj_total)
 
-    dfObj_total.to_csv('timing_results.csv')
+    # dfObj_total.to_csv('timing_results_02.csv')
 
     # from torch.profiler import profile, record_function, ProfilerActivity
 

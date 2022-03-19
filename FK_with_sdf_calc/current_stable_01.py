@@ -6,10 +6,7 @@ import pytorch_kinematics as pk
 import trimesh
 import numpy as np
 import time
-
-# Global variables
-saved_cloud = np.empty(7, dtype=object)
-homogeneous_trans_mat = np.empty(6, dtype=object)
+import pandas as pd
 
 #Calculates the surface point cloud for each link
 def precalculate_surface_point_cloud() :
@@ -38,7 +35,8 @@ def test_urdf():
     print(chain.get_joint_parameter_names())
 
     N = 1
-    d = "cuda" if torch.cuda.is_available() else "cpu"
+    # d = "cuda" if torch.cuda.is_available() else "cpu"
+    d= "cpu"
     dtype = torch.float64
 
     th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=d)
@@ -65,6 +63,9 @@ def query_points(homogeneous_trans_mat) :
                                    [1],
                                    [1]])
 
+    # dfObj_per_run = pd.DataFrame()
+    # dfObj_per_run['Timing'] = ['0']
+    point_start_seconds = time.time()
     for i in range(len(homogeneous_trans_mat)) :
         #Transformation of world coordinate to local coordinates 
         if i == 0 :
@@ -78,14 +79,35 @@ def query_points(homogeneous_trans_mat) :
         current_query_point_reshaped = current_query_point.reshape(1,4)
         final_query_points = current_query_point_reshaped[0][:3].reshape(1,-1)
         # print(final_query_points)
+        point_seconds = time.time() - point_start_seconds
+        print (point_seconds)
+        # dfObj_per_run[run_time] = [point_seconds]
         #Calculation of sdf
-        start_sec = time.time()
-        dist = saved_cloud[i].get_sdf_in_batches(final_query_points, use_depth_buffer=False)
-        seconds = time.time() - start_sec
+        dist_start_seconds = time.time()
+        dist = saved_cloud[i].get_sdf_in_batches(final_query_points, run_time, use_depth_buffer=False)
+        # dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(final_query_points, run_time, use_depth_buffer=False)
+        # dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
+        seconds = time.time() - dist_start_seconds
         # print (dist)
         print (seconds)
 
+        # return dfObj_per_run
+
 if __name__ == "__main__":
+    # Global variables
+    saved_cloud = np.empty(7, dtype=object)
+    homogeneous_trans_mat = np.empty(6, dtype=object)
     precalculate_surface_point_cloud()
     test_urdf()
+    run_time = 1
+    # dfObj_total = pd.DataFrame()
+
+    # for run_time in range (1) :
+    #     dfObj_per_run = query_points(homogeneous_trans_mat, run_time)
+    #     run_time+=1
+    #     dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
+    
+    # print (dfObj_total)
+
+    # dfObj_total.to_csv('timing_results_01.csv')
     query_points(homogeneous_trans_mat)
