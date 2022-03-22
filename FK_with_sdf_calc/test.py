@@ -1,4 +1,5 @@
 import os
+from unicodedata import decimal
 # os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 
 from mesh_to_sdf import get_surface_point_cloud
@@ -6,7 +7,7 @@ from urdf_parser_py.urdf import URDF
 
 import pandas as pd
 import torch
-import tensorflow as tf
+# import tensorflow as tf
 import pytorch_kinematics as pk
 import trimesh
 import numpy as np
@@ -49,7 +50,6 @@ def test_urdf(dev, run_time):
     i = 0
     for key in tg_batch :
         homogeneous_trans_mat_one = tg_batch[key].get_matrix()
-        # print(homogeneous_trans_mat_one)
         if i == 0 :
             homogeneous_trans_mat[i] = homogeneous_trans_mat_one
         else :
@@ -59,37 +59,63 @@ def test_urdf(dev, run_time):
     print("Randomized one FK! Moving on to calculate SDF!")
     time.sleep(1)
     
-    dfObj_per_run = pd.DataFrame()
-    dfObj_per_run['Timing'] = ['0']
+    # dfObj_per_run = pd.DataFrame()
+    # dfObj_per_run['Timing'] = ['0']
     point_start_seconds = time.time()
-    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
+    query_points_world_list = torch.zeros((64000, 4, 1), dtype=dtype, device=dev)
+    x_count = 0
+    y_count = 0
+    z_count = 0
+    for not_sure_index in range (len(query_points_world_list)) :
+        query_points_world_list[not_sure_index][0] = (0.04 * x_count) - 0.78
+        query_points_world_list[not_sure_index][1] = (0.04 * y_count) - 0.78
+        query_points_world_list[not_sure_index][2] = (0.04 * z_count) - 0.78
+        if z_count == 40:
+            y_count +=1
+            z_count = 0
+            if y_count == 40 :
+                x_count +=1
+                y_count = 0
+        # print(x_count, y_count, z_count)
+        z_count +=1
+
+    # query_points_world_list = torch.round(query_points_world_list)
     query_points_world_list[:,3] = 1
+    print (query_points_world_list)
 
     query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
     # print(query_points_local_list)
     query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
-    # print(query_points_local_list_reshaped)
-    ids = torch.tensor([3], device=dev).repeat(7000)
+    # print(query_points_local_list_reshaped.size)
+    ids = torch.tensor([3], device=dev).repeat(448000)
 
     mask = torch.ones_like(query_points_local_list_reshaped).scatter_(1, ids.unsqueeze(1), 0.)
-    query_points_local_list_final = query_points_local_list[mask.bool()].view(7000, 3)
+    query_points_local_list_final = query_points_local_list[mask.bool()].view(448000, 3)
+    query_points_local_list_final = torch.round(query_points_local_list_final * 10 ** 2) / (10 ** 2)
     # print(query_points_local_list_final)
+    # testing_dict[query_points_local_list_final[0]] = 2
     point_seconds = time.time() - point_start_seconds
     print (point_seconds)
-    dfObj_per_run[run_time] = [point_seconds]
+    # dfObj_per_run[run_time] = [point_seconds]
 
     dist_start_seconds = time.time()
     for i in range(len(chain.get_joint_parameter_names())+1):
-        # dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*1000:((i+1)*1000)-1], use_depth_buffer=False)
-        dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
-    # print(dist)
+        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*64000:((i+1)*64000)-1],run_time, use_depth_buffer=False)
+        # dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
+        print(len(query_points_local_list_final[i*64000:((i+1)*64000)-1]))
+        print(len(dist[0]))
+        # print (dist)
+        for index in range (len(query_points_local_list_final[i*64000:((i+1)*64000)-1])) : 
+            testing_dict[query_points_local_list_final[index]] = dist[0][index]
         # print (dfObj_per_link)
-        dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
+        # dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
     # print (dfObj_per_run)
+    
     dist_seconds = time.time() - dist_start_seconds
     print ("Total timing: ", dist_seconds)
 
-    return dfObj_per_run
+    # return dfObj_per_run
+    # print(testing_dict)
 
 if __name__ == "__main__":
 
@@ -102,14 +128,20 @@ if __name__ == "__main__":
     # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
     run_time = 1
     dfObj_total = pd.DataFrame()
-    # test_urdf(dev, run_time)
-    for run_time in range (1) :
-        dfObj_per_run = test_urdf(dev, run_time)
-        run_time+=1
-        dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
-        # result = pd.concat([df1, df4], axis=1)
-    
-    # print (dfObj_total)
+    testing_dict = {}
+    test_urdf(dev, run_time)
+
+    with open('testing_dict.csv', 'w') as f:
+        for key in testing_dict.keys():
+            f.write("%s,%s\n"%(key,testing_dict[key]))
+
+
+
+
+    # for run_time in range (1) :
+    #     dfObj_per_run = test_urdf(dev, run_time)
+    #     run_time+=1
+    #     dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
 
     # dfObj_total.to_csv('timing_results_02.csv')
 
