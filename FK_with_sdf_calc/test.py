@@ -13,6 +13,8 @@ import trimesh
 import numpy as np
 import time
 
+import voxel_conversion
+
 def precalculate_surface_point_cloud() :
 
     file = "osr_description/urdf/denso_vs060.urdf"
@@ -79,7 +81,6 @@ def test_urdf(dev, run_time):
         # print(x_count, y_count, z_count)
         z_count +=1
 
-    # query_points_world_list = torch.round(query_points_world_list)
     query_points_world_list[:,3] = 1
     print (query_points_world_list)
 
@@ -106,7 +107,7 @@ def test_urdf(dev, run_time):
         print(len(dist[0]))
         # print (dist)
         for index in range (len(query_points_local_list_final[i*64000:((i+1)*64000)-1])) : 
-            testing_dict[query_points_local_list_final[index]] = dist[0][index]
+            testing_dict[i*64000:((i+1)*64000)-1] = dist[0][index]
         # print (dfObj_per_link)
         # dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
     # print (dfObj_per_run)
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     dtype = torch.float32
     saved_cloud = np.empty(7, dtype=object)
     precalculate_surface_point_cloud()
-    # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+    
     run_time = 1
     dfObj_total = pd.DataFrame()
     testing_dict = {}
@@ -135,8 +136,10 @@ if __name__ == "__main__":
         for key in testing_dict.keys():
             f.write("%s,%s\n"%(key,testing_dict[key]))
 
+    # voxel_conversion.VoxelConversion()
 
 
+    # from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
 
     # for run_time in range (1) :
     #     dfObj_per_run = test_urdf(dev, run_time)
