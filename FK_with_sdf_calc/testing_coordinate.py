@@ -26,7 +26,7 @@ numvoxels = torch.ones(3, dtype=torch.int16) *10
 # gridextent = np.ones(3, dtype=np.float)*0.8
 # numvoxels = np.ones(3, dtype=np.int16)*args.numvoxels
 
-point = torch.tensor([0.5,0.5,0.5])
+point = torch.tensor([0.5,0.,0.])
 
 print (gridcenter, gridextent, numvoxels)
 

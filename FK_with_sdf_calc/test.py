@@ -1,9 +1,7 @@
-import os
-from unicodedata import decimal
+# from cgi import test
+# import os
+# from unicodedata import decimal
 # os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
-
-from mesh_to_sdf import get_surface_point_cloud
-from urdf_parser_py.urdf import URDF
 
 import pandas as pd
 import torch
@@ -13,7 +11,10 @@ import trimesh
 import numpy as np
 import time
 
-import voxel_conversion
+from mesh_to_sdf import get_surface_point_cloud
+from urdf_parser_py.urdf import URDF
+
+from voxel_conversion import VoxelConversion
 
 def precalculate_surface_point_cloud() :
 
@@ -82,39 +83,51 @@ def test_urdf(dev, run_time):
         z_count +=1
 
     query_points_world_list[:,3] = 1
-    print (query_points_world_list)
+    # print (query_points_world_list)
 
-    query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
+    # query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
     # print(query_points_local_list)
-    query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
-    # print(query_points_local_list_reshaped.size)
-    ids = torch.tensor([3], device=dev).repeat(448000)
+    # query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
+    query_points_local_list_reshaped = torch.squeeze(query_points_world_list)
+    print(query_points_local_list_reshaped.size)
+    ids = torch.tensor([3], device=dev).repeat(64000)
 
     mask = torch.ones_like(query_points_local_list_reshaped).scatter_(1, ids.unsqueeze(1), 0.)
-    query_points_local_list_final = query_points_local_list[mask.bool()].view(448000, 3)
-    query_points_local_list_final = torch.round(query_points_local_list_final * 10 ** 2) / (10 ** 2)
-    # print(query_points_local_list_final)
-    # testing_dict[query_points_local_list_final[0]] = 2
+    query_points_local_list_final = query_points_world_list[mask.bool()].view(64000, 3)
+    # query_points_local_list_final = torch.round(query_points_local_list_final * 10 ** 2) / (10 ** 2)
+    print(query_points_local_list_final)
     point_seconds = time.time() - point_start_seconds
     print (point_seconds)
     # dfObj_per_run[run_time] = [point_seconds]
 
+    testing_dict_per_link = {}
+    testing_df_per_link = pd.DataFrame()
+    testing_dict_per_run = pd.DataFrame()
     dist_start_seconds = time.time()
     for i in range(len(chain.get_joint_parameter_names())+1):
-        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final[i*64000:((i+1)*64000)-1],run_time, use_depth_buffer=False)
+        print(saved_cloud[i])
+        dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final,run_time, use_depth_buffer=False)
         # dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
-        print(len(query_points_local_list_final[i*64000:((i+1)*64000)-1]))
-        print(len(dist[0]))
-        # print (dist)
-        for index in range (len(query_points_local_list_final[i*64000:((i+1)*64000)-1])) : 
-            testing_dict[i*64000:((i+1)*64000)-1] = dist[0][index]
-        # print (dfObj_per_link)
-        # dfObj_per_run = dfObj_per_run.append(dfObj_per_link, ignore_index=True)
+        # print(len(query_points_local_list_final[i*64000:((i+1)*64000)-1]))
+        # print(len(dist[0]))
+        # print(dist[0])
+
+        for index in range (len(query_points_local_list_final)) : 
+            # testing_dict_per_link[i*64000:((i+1)*64000)-1] = dist[0][index]
+            testing_dict_per_link[index] = dist[index]
+        voxel_index_number = 'vox_ind_' + str(i)
+        print(voxel_index_number)
+        testing_df_per_link = pd.DataFrame(list(testing_dict_per_link.items()),columns = [voxel_index_number,'SDF'])
+
+        # print (testing_dict_per_run)
+        # # testing_dict_per_run = testing_dict_per_run.append(testing_dict_per_link, ignore_index=True)
+        testing_dict_per_run = pd.concat((testing_dict_per_run, testing_df_per_link), axis=1)
     # print (dfObj_per_run)
     
     dist_seconds = time.time() - dist_start_seconds
     print ("Total timing: ", dist_seconds)
 
+    return testing_dict_per_run
     # return dfObj_per_run
     # print(testing_dict)
 
@@ -128,13 +141,19 @@ if __name__ == "__main__":
     precalculate_surface_point_cloud()
     
     run_time = 1
-    dfObj_total = pd.DataFrame()
-    testing_dict = {}
-    test_urdf(dev, run_time)
+    # dfObj_total = pd.DataFrame()
+    testing_dict = pd.DataFrame()
+    # test_urdf(dev, run_time)
+    # for run_time in range (1) :
+    testing_dict = test_urdf(dev, run_time)
+    testing_dict.to_csv('testing_dict.csv')
+        # dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
 
-    with open('testing_dict.csv', 'w') as f:
-        for key in testing_dict.keys():
-            f.write("%s,%s\n"%(key,testing_dict[key]))
+    # dfObj_total.to_csv('timing_results_02.csv')
+
+    # with open('testing_dict.csv', 'w') as f:
+    #     for key in testing_dict.keys():
+    #         f.write("%s,%s\n"%(key,testing_dict[key]))
 
     # voxel_conversion.VoxelConversion()
 
