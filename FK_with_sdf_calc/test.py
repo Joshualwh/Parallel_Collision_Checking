@@ -108,13 +108,16 @@ def test_urdf(dev, run_time):
         print(saved_cloud[i])
         dist = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final,run_time, use_depth_buffer=False)
         # dist, dfObj_per_link = saved_cloud[i].get_sdf_in_batches(query_points_local_list_final, run_time, use_depth_buffer=False)
-        # print(len(query_points_local_list_final[i*64000:((i+1)*64000)-1]))
         # print(len(dist[0]))
+        # print(dist)
         # print(dist[0])
 
         for index in range (len(query_points_local_list_final)) : 
             # testing_dict_per_link[i*64000:((i+1)*64000)-1] = dist[0][index]
-            testing_dict_per_link[index] = dist[index]
+            # For Mac Laptop
+            # testing_dict_per_link[index] = dist[index]
+            # For Desktop
+            testing_dict_per_link[index] = dist[0][index] 
         voxel_index_number = 'vox_ind_' + str(i)
         print(voxel_index_number)
         testing_df_per_link = pd.DataFrame(list(testing_dict_per_link.items()),columns = [voxel_index_number,'SDF'])
@@ -146,7 +149,7 @@ if __name__ == "__main__":
     # test_urdf(dev, run_time)
     # for run_time in range (1) :
     testing_dict = test_urdf(dev, run_time)
-    testing_dict.to_csv('testing_dict.csv')
+    testing_dict.to_csv('testing_dict_2.csv')
         # dfObj_total = pd.concat([dfObj_total, dfObj_per_run], axis=1)
 
     # dfObj_total.to_csv('timing_results_02.csv')
