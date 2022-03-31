@@ -6,9 +6,9 @@ import torch
 
 class VoxelConversion(object):
     def __init__(self, gridcenter, gridextent, numvoxels):
-        gridcenter.clone().detach()
-        gridextent.clone().detach()
-        numvoxels.clone().detach()
+        # gridcenter = gridcenter.clone().detach()
+        # gridextent = gridextent.clone().detach()
+        # numvoxels = numvoxels.clone().detach()
         self.origin = gridcenter - gridextent
         self.numvoxels = numvoxels
         self.voxelsize = 2 * gridextent / numvoxels
@@ -16,17 +16,30 @@ class VoxelConversion(object):
 
     def toIndex(self, point):
         t = point - self.halfvoxelsize - self.origin
-        i = (t / self.voxelsize)
-        i = i.short()
-# The error Message Bool value of Tensor with more than one value is ambiguous appears when you try to cast a tensor into a bool value. This happens most commonly when passing the tensor to an if condition, e.g.
-        i = i.numpy()
-        # self.numvoxels = self.numvoxels.numpy()
-        print (i)
+        coor_index = (t / self.voxelsize)
+        coor_index = coor_index.short()
+        # coor_index = coor_index.numpy()
 
-        if i[0] >= 0 and i[0] < self.numvoxels[0]:
-            index = i[2] + self.numvoxels[2] * i[1] + self.numvoxels[2] * self.numvoxels[1] * i[0]
-            print(index)
-            return index
+        # print(coor_index)
+
+        checking_1 = coor_index >= torch.Tensor([0,0,0])
+        checking_2 = self.numvoxels > coor_index
+
+        # print(checking_1.all() == True)
+        # print(checking_2.all() == True)
+
+        if checking_1.all() == True and checking_2.all() == True :
+            vox_con = torch.arange(40 ** 3).reshape(40, 40, 40)
+            vox_ind = vox_con[coor_index[0], coor_index[1], coor_index[2]]
+            # print(vox_ind)
+            return vox_ind.item()
+        # self.numvoxels = self.numvoxels.numpy()
+        # print (i)
+
+        # if i[0] >= 0 and i[0] < self.numvoxels[0]:
+        #     index = i[2] + self.numvoxels[2] * i[1] + self.numvoxels[2] * self.numvoxels[1] * i[0]
+        #     # print(index)
+        #     return index
         return -1
 
 # class VoxelConversion(object):
@@ -70,5 +83,6 @@ class VoxelConversion(object):
 
 
 if __name__ == '__main__':
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
     from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
 
