@@ -42,7 +42,7 @@ def read_dict () :
     link_5_dict[-1] = 'False'
     link_6_dict[-1] = 'False'
 
-    print(link_0_dict)
+    # print(link_0_dict)
     print('Finished creating dict for each link...')
 
 # Pytorch_Kinematics to get homogeneous transformation matrix
@@ -80,17 +80,18 @@ def pytorch_kinematics_implementation () :
 # Input of randomized points, which will be converted to voxels, search dictionary for collision status
 def main_calculation () :
     # Still waiting for implementation...
-    query_points_world_list = torch.rand((1000, 4, 1), dtype=dtype, device=dev)
+    num_of_points = 307200
+    query_points_world_list = torch.rand((num_of_points, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
 
     query_points_local_list = torch.matmul(homogeneous_trans_mat.repeat(len(query_points_world_list),1,1), query_points_world_list.repeat_interleave(len(homogeneous_trans_mat), dim=0))
     # print(query_points_local_list)
     query_points_local_list_reshaped = torch.squeeze(query_points_local_list)
     # print(query_points_local_list_reshaped)
-    ids = torch.tensor([3], device=dev).repeat(7000)
+    ids = torch.tensor([3], device=dev).repeat(7*num_of_points)
 
     mask = torch.ones_like(query_points_local_list_reshaped).scatter_(1, ids.unsqueeze(1), 0.)
-    query_points_local_list_final = query_points_local_list[mask.bool()].view(7000, 3)
+    query_points_local_list_final = query_points_local_list[mask.bool()].view(7*num_of_points, 3)
     # print(query_points_local_list_final)
 
     gridcenter = torch.zeros(3, dtype=torch.float32, device=dev)
@@ -106,31 +107,49 @@ def main_calculation () :
     
     start_seconds = time.time()
     for links in range(n_links) :  
-        # print(links)
-        # start_seconds_3 = time.time()
-        for i in range (len(query_points_local_list_final)) :
-            # start_seconds_1 = time.time()
-            vox_ind = vox_con.toIndex(query_points_local_list_final[i])
-            # end_seconds_1 = time.time() - start_seconds_1
-            # print(end_seconds_1)
-            # print (vox_ind)
-            # start_seconds_2 = time.time()
-            if vox_ind != -1 : 
-                # Put voxel found into dict to find collision status
-                collision_status = link_0_dict[vox_ind]
-                # print(collision_status)
-                    
-                # if collision_status == 'True' :
-                #     print ('In Collision!')
-                #     break
-                # else :
-                #     print ('All Cool!')
-            # end_seconds_2 = time.time() - start_seconds_2
-            # print(end_seconds_2)
-        # end_seconds_3 = time.time() - start_seconds_3
-        # print(end_seconds_3)
+        vox_ind = vox_con.toIndex_test(query_points_local_list_final[links*num_of_points:((links+1)*num_of_points)-1])
+            # Put voxel found into dict to find collision status
+        # print(vox_ind)
+        
+        for i in range (len(vox_ind)) :
+            collision_status = link_0_dict[int(vox_ind[i])]
+            # print(collision_status)
+            # if collision_status == 'True' :
+            #     print ('In Collision!')
+            #     break
+            # else :
+            #     print ('All Cool!')
+    print(len(vox_ind))
     time_taken = time.time() - start_seconds
     print(time_taken)
+
+    # start_seconds = time.time()
+    # for links in range(n_links) :  
+    #     # print(links)
+    #     # start_seconds_3 = time.time()
+    #     for i in range (len(query_points_local_list_final)) :
+    #         # start_seconds_1 = time.time()
+    #         vox_ind = vox_con.toIndex(query_points_local_list_final[i])
+    #         # end_seconds_1 = time.time() - start_seconds_1
+    #         # print(end_seconds_1)
+    #         # print (vox_ind)
+    #         # start_seconds_2 = time.time()
+    #         if vox_ind != -1 : 
+    #             # Put voxel found into dict to find collision status
+    #             collision_status = link_0_dict[vox_ind]
+    #             # print(collision_status)
+                    
+    #             # if collision_status == 'True' :
+    #             #     print ('In Collision!')
+    #             #     break
+    #             # else :
+    #             #     print ('All Cool!')
+    #         # end_seconds_2 = time.time() - start_seconds_2
+    #         # print(end_seconds_2)
+    #     # end_seconds_3 = time.time() - start_seconds_3
+    #     # print(end_seconds_3)
+    # time_taken = time.time() - start_seconds
+    # print(time_taken)
 
 
 if __name__ == "__main__":

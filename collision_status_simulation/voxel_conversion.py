@@ -14,6 +14,24 @@ class VoxelConversion(object):
         self.voxelsize = 2 * gridextent / numvoxels
         self.halfvoxelsize = self.voxelsize / 2
 
+    def toIndex_test (self, points) :
+        voxelindices = torch.arange(40 ** 3).reshape(40, 40, 40)
+
+        voxelsize = 0.04
+        numvoxel = 40
+        workspacesize = voxelsize*numvoxel
+
+        points_filtered = points[torch.all((points < workspacesize / 2) & (-workspacesize / 2 < points), dim=1)]
+
+        origin = torch.tensor([-workspacesize/2,-workspacesize/2,-workspacesize/2])
+
+        # voxel = torch.tensor([voxelsize, voxelsize, voxelsize])
+        voxelindices = ((points_filtered - origin) / voxelsize).to(torch.long)
+        flattenedindices = voxelindices[:, 0]*numvoxel*numvoxel + voxelindices[:, 1]*numvoxel + voxelindices[:, 2]
+
+        return flattenedindices  
+        # index = i[2] + self.numvoxels[2] * i[1] + self.numvoxels[2] * self.numvoxels[1] * i[0]
+
     def toIndex(self, point):
         t = point - self.halfvoxelsize - self.origin
         coor_index = (t / self.voxelsize)
@@ -30,7 +48,7 @@ class VoxelConversion(object):
 
         if checking_1.all() == True and checking_2.all() == True :
             vox_con = torch.arange(40 ** 3).reshape(40, 40, 40)
-            vox_ind = vox_con[coor_index[0], coor_index[1], coor_index[2]]
+            vox_ind = vox_con[coor_index[:, 0], coor_index[:, 1], coor_index[:, 2]]
             # print(vox_ind)
             return vox_ind.item()
         # self.numvoxels = self.numvoxels.numpy()
