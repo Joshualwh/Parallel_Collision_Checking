@@ -30,21 +30,14 @@ class VoxelConversion(object):
         flattenedindices = voxelindices[:, 0]*numvoxel*numvoxel + voxelindices[:, 1]*numvoxel + voxelindices[:, 2]
 
         return flattenedindices  
-        # index = i[2] + self.numvoxels[2] * i[1] + self.numvoxels[2] * self.numvoxels[1] * i[0]
 
     def toIndex(self, point):
         t = point - self.halfvoxelsize - self.origin
         coor_index = (t / self.voxelsize)
         coor_index = coor_index.short()
-        # coor_index = coor_index.numpy()
-
-        # print(coor_index)
 
         checking_1 = coor_index >= torch.Tensor([0,0,0])
         checking_2 = self.numvoxels > coor_index
-
-        # print(checking_1.all() == True)
-        # print(checking_2.all() == True)
 
         if checking_1.all() == True and checking_2.all() == True :
             vox_con = torch.arange(40 ** 3).reshape(40, 40, 40)
