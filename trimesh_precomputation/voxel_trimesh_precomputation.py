@@ -156,9 +156,10 @@ def voxel_distance_calculation () :
 
     return df_per_run
 
+# Calculates the collision status between every voxel and the robot link
 def voxel_collision_status () :
 
-    #Create Coordinate System for Translation
+    #Create coordinate system for translation purposes
     query_points_world_list = torch.zeros((64000, 4), dtype=dtype, device=dev)
     x_count = 0
     y_count = 0
@@ -174,22 +175,25 @@ def voxel_collision_status () :
                 x_count +=1
                 y_count = 0
         z_count +=1
-    # print (query_points_world_list)
 
-    # Import Robot Mesh to calculate minimum distance between each voxel to mesh
+    # Import all the robot arm links
     file = "osr_description/urdf/denso_vs060.urdf"
     robot = URDF.from_xml_file(file)
     links = robot.links
     n_links = len(links)
 
+    # Dictionary is created to store the data
     dict_per_link = {}
+
+    # Pandas DataFrame is used to store the data to output as .csv files
     df_per_link = pd.DataFrame()
     df_per_run = pd.DataFrame()
+
+    # The main process of the precomputation 
     for i in range (n_links): 
         robot_mesh_filename = robot.links[i].collision.geometry.filename
         robot_link = robot_mesh_filename.replace('package://', '')
         mesh = trimesh.load_mesh(robot_link)
-        # print ('Distancing...' + str(i))
         for count in range (len(query_points_world_list)) :
             voxel_collision_manager = CollisionManager()
             voxel_transform_identity = torch.zeros((4, 4), dtype=dtype, device=dev)
