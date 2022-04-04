@@ -1,31 +1,20 @@
 from urdf_parser_py.urdf import URDF
-# from trimesh.voxel import creation
-# from trimesh.viewer import *
-# from trimesh.collision import CollisionManager
-# from trimesh.creation import *
 
 import pandas as pd
 import torch
-import numpy as np
 import pytorch_kinematics as pk
 import time
-import voxel_conversion
 
-# Read excel file, create dictionary
-# Create 7 dict for each link
+# Create 7 dictionaries for collisions status of each voxel in each robot link
 def read_dict () :
 
+    # Import precomputed data and store in respective dictionaries
     dict_from_csv = pd.read_csv('trimesh_collision_status.csv', header=None, index_col=0, squeeze=True).to_dict()
     voxel_index = list(dict_from_csv[1].keys())
     voxel_index.pop(0)
     voxel_index = [int(x) for x in voxel_index]
-    # voxel_index_str = [str(x) for x in voxel_index]
-    # print(voxel_index[0])
-    # print(dict_from_csv[1])
-    # print(dict_from_csv[2][voxel_index[1234]])
 
     for i in range (len(voxel_index)) :
-        # link_0_dict[voxel_index[i]] = dict_from_csv[2]
         link_0_dict[voxel_index[i]] = dict_from_csv[2][voxel_index[i]]
         link_1_dict[voxel_index[i]] = dict_from_csv[4][voxel_index[i]]
         link_2_dict[voxel_index[i]] = dict_from_csv[6][voxel_index[i]]
@@ -34,22 +23,12 @@ def read_dict () :
         link_5_dict[voxel_index[i]] = dict_from_csv[12][voxel_index[i]]
         link_6_dict[voxel_index[i]] = dict_from_csv[14][voxel_index[i]]
 
-    # link_0_dict[-1] = 'False'
-    # link_1_dict[-1] = 'False'
-    # link_2_dict[-1] = 'False'
-    # link_3_dict[-1] = 'False'
-    # link_4_dict[-1] = 'False'
-    # link_5_dict[-1] = 'False'
-    # link_6_dict[-1] = 'False'
-
-    # print(link_0_dict)
     print('Finished creating dict for each link...')
 
-# Pytorch_Kinematics to get homogeneous transformation matrix
+# Pytorch_Kinematics to obtain homogeneous transformation matrix
 def pytorch_kinematics_implementation () :
     chain = pk.build_serial_chain_from_urdf(open("osr_description/urdf/denso_vs060.urdf").read(), "J6")
-    print(chain)
-    # print(chain.get_joint_parameter_names())
+    # print(chain)
     
     N = 1
     th_batch = torch.rand(N, len(chain.get_joint_parameter_names()), dtype=dtype, device=dev)
@@ -73,32 +52,34 @@ def pytorch_kinematics_implementation () :
         i+= 1
 
     print("Randomized one FK and moving on...")
-    # time.sleep(1)
     return homogeneous_trans_mat
 
-def toIndex_test (points) :
+# Conversion of local coordinates to their respective voxel index
+def toIndex (points) :
     voxelindices = torch.arange(40 ** 3).reshape(40, 40, 40).to(dev)
 
+    # Details of the voxels
     voxelsize = 0.04
     numvoxel = 40
     workspacesize = voxelsize*numvoxel
 
+    # Since the imported coordinates are randomized and might be out of our working range, we therefore filter the points in this process
     points_filtered = points[torch.all((points < workspacesize / 2) & (-workspacesize / 2 < points), dim=1)]
-
     origin = torch.tensor([-workspacesize/2,-workspacesize/2,-workspacesize/2], device=dev)
 
-    # voxel = torch.tensor([voxelsize, voxelsize, voxelsize])
-    # print(origin.device)
+    # Voxel index is produced here
     voxelindices = ((points_filtered - origin) / voxelsize).to(torch.long)
-    # voxelindices.dev
     flattenedindices = voxelindices[:, 0]*numvoxel*numvoxel + voxelindices[:, 1]*numvoxel + voxelindices[:, 2]
 
     return flattenedindices  
 
 # Input of randomized points, which will be converted to voxels, search dictionary for collision status
 def main_calculation () :
-    # Still waiting for implementation...
+
+    # Number of points for simulation
     num_of_points = 640*480
+
+    # Creation and transformation of randomized points 
     query_points_world_list = torch.rand((num_of_points, 4, 1), dtype=dtype, device=dev)
     query_points_world_list[:,3] = 1
 
@@ -116,26 +97,33 @@ def main_calculation () :
     # links = robot.links
     n_links = 7
     
+    # Main process of the simulation
     start_seconds = time.time()
     for links in range(n_links) :  
-        vox_ind = toIndex_test(query_points_local_list_final[links*num_of_points:((links+1)*num_of_points)-1])
-            # Put voxel found into dict to find collision status
+        vox_ind = toIndex(query_points_local_list_final[links*num_of_points:((links+1)*num_of_points)-1])
         print(len(vox_ind))
 
-        for i,number in enumerate (vox_ind) :
-            if n_links == 0:
+
+        if n_links == 0:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 1:
+        elif n_links == 1:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 2:
+        elif n_links == 2:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 3:
+        elif n_links == 3:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 4:
+        elif n_links == 4:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 5:
+        elif n_links == 5:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
-            elif n_links == 6:
+        elif n_links == 6:
+            for i,number in enumerate (vox_ind):
                 collision_status = link_0_dict[int(number)]
 
             # print(collision_status)
@@ -144,6 +132,7 @@ def main_calculation () :
             #     break
             # else :
             #     print ('All Cool!')
+
     time_taken = time.time() - start_seconds
     print(time_taken)
 
