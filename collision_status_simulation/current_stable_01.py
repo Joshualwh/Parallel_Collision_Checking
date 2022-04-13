@@ -51,7 +51,7 @@ def pytorch_kinematics_implementation () :
             homogeneous_trans_mat[i] = homogeneous_trans_mat_one * homogeneous_trans_mat[i-1] 
         i+= 1
 
-    print("Randomized one FK and moving on...")
+    # print("Randomized one FK and moving on...")
     return homogeneous_trans_mat
 
 # Conversion of local coordinates to their respective voxel index
@@ -77,7 +77,8 @@ def toIndex (points) :
 def main_calculation () :
 
     # Number of points for simulation
-    num_of_points = 640*480
+    num_of_points = 400000
+    # num_of_points = 9000
 
     # Creation and transformation of randomized points 
     query_points_world_list = torch.rand((num_of_points, 4, 1), dtype=dtype, device=dev)
@@ -101,8 +102,7 @@ def main_calculation () :
     start_seconds = time.time()
     for links in range(n_links) :  
         vox_ind = toIndex(query_points_local_list_final[links*num_of_points:((links+1)*num_of_points)-1])
-        print(len(vox_ind))
-
+        # print(len(vox_ind))
 
         if n_links == 0:
             for i,number in enumerate (vox_ind):
@@ -134,12 +134,13 @@ def main_calculation () :
             #     print ('All Cool!')
 
     time_taken = time.time() - start_seconds
-    print(time_taken)
+    # print(time_taken)
+    return len(vox_ind), time_taken
 
 
 if __name__ == "__main__":
-    # dev = "cpu"
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    dev = "cpu"
+    # dev = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float32
     link_0_dict = {}
     link_1_dict = {}
@@ -149,7 +150,16 @@ if __name__ == "__main__":
     link_5_dict = {}
     link_6_dict = {}
     read_dict()
-    homogeneous_trans_mat = pytorch_kinematics_implementation()
-    collision_status = main_calculation()
+    pd_time_taken = 0
+    pd_vox_ind = 0
+    for i in range (100):
+        homogeneous_trans_mat = pytorch_kinematics_implementation()
+        vox_ind, time_taken = main_calculation()
+        pd_time_taken += time_taken
+        pd_vox_ind += vox_ind
+    # print(pd_time_taken, pd_vox_ind)
+    pd_time_taken = pd_time_taken/100
+    pd_vox_ind = pd_vox_ind/100
+    print(pd_time_taken, pd_vox_ind)
     # print(collision_status)
     # print(homogeneous_trans_mat)

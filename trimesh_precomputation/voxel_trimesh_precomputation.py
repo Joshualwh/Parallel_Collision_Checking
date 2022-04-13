@@ -4,6 +4,8 @@ from trimesh.voxel import creation
 from trimesh.viewer import *
 from trimesh.collision import CollisionManager
 from trimesh.creation import *
+from trimesh.viewer import *
+from trimesh.scene import *
 
 import pandas as pd
 import torch
@@ -212,9 +214,60 @@ def voxel_collision_status () :
 
     return df_per_run
 
+def collect_screenshot() :
+    file = "osr_description/urdf/denso_vs060.urdf"
+    robot = URDF.from_xml_file(file)
+    links = robot.links
+    # n_links = len(links)
+    n_links = 1
+
+    query_points_world_list = torch.zeros((64000, 4), dtype=dtype, device=dev)
+    x_count = 0
+    y_count = 0
+    z_count = 0
+    for not_sure_index in range (len(query_points_world_list)) :
+        query_points_world_list[not_sure_index][0] = (0.04 * x_count) - 0.78
+        query_points_world_list[not_sure_index][1] = (0.04 * y_count) - 0.78
+        query_points_world_list[not_sure_index][2] = (0.04 * z_count) - 0.78
+        if z_count == 40:
+            y_count +=1
+            z_count = 0
+            if y_count == 40 :
+                x_count +=1
+                y_count = 0
+        z_count +=1
+
+    # Collision_Checking = CollisionManager()
+    robot_mesh_filename = robot.links[2].collision.geometry.filename
+    robot_link = robot_mesh_filename.replace('package://', '')
+    # print(robot_link)
+    mesh_to_insert = trimesh.load_mesh(robot_link)
+    # trimesh.points.PointCloud.show(mesh_to_insert)
+
+    voxel_collision_manager = CollisionManager()
+    query_points_world_list = query_points_world_list[29498]
+    print(query_points_world_list)
+    count = 1
+    voxel_transform_identity = torch.zeros((4, 4), dtype=dtype, device=dev)
+    for identity_index in range (4) :
+        voxel_transform_identity[identity_index][identity_index] = 1
+    for i in range (3) : 
+        voxel_transform_identity [i][3] = query_points_world_list[i]
+    voxel_box = box(extents=(0.04, 0.04, 0.04), transform=voxel_transform_identity)
+    # trimesh.points.PointCloud.show(voxel_box)
+    voxel_index = 'voxel_' + str(count)
+    voxel_collision_manager.add_object(voxel_index, voxel_box)
+    to_show = Scene()
+    to_show.add_geometry(voxel_box)
+    to_show.add_geometry(mesh_to_insert)
+    # voxel_collision = voxel_collision_manager.in_collision_single(mesh_to_insert, transform=None, return_names=False, return_data=False)
+    SceneViewer(to_show)
+    # print(voxel_collision)
+
 if __name__ == "__main__":
     dev = "cpu"
     dtype = torch.float32
+    collect_screenshot()
     # trimesh_collision()
     # # voxel_collision_status()
     # trimesh_collision_status = pd.DataFrame()
